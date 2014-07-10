@@ -1,0 +1,4 @@
+c:\users\ccook\documents\visual studio 2013\Projects\scorm\scorm\bin\Debug\scorm.dll
+c:\users\ccook\documents\visual studio 2013\Projects\scorm\scorm\bin\Debug\scorm.pdb
+c:\users\ccook\documents\visual studio 2013\Projects\scorm\scorm\obj\Debug\scorm.dll
+c:\users\ccook\documents\visual studio 2013\Projects\scorm\scorm\obj\Debug\scorm.pdb

@@ -71,20 +71,23 @@ namespace Scorm
 
         public DataSet<T> Sort<TResult>(Expression<Func<T, TResult>> expression)
         {
-            SortExpressions.Add(expression);
-            return this;
+			var result = (DataSet<T>)MemberwiseClone ();
+			result.SortExpressions.Add (expression);
+            return result;
         }
 
         public DataSet<T> SortDescending<TResult>(Expression<Func<T, TResult>> expression)
         {
-            SortDescendingExpressions.Add(expression);
-            return this;
+			var result = (DataSet<T>)MemberwiseClone ();
+			result.SortDescendingExpressions.Add (expression);
+			return result;
         }
 
         public DataSet<T> Where(Expression<Func<T, bool>> expression)
         {
-            SearchExpressions.Add(expression);
-            return this;
+			var result = (DataSet<T>)MemberwiseClone ();
+			result.SearchExpressions.Add (expression);
+			return result;
         }
 
         public TResult Max<TResult>(Expression<Func<T, TResult>> expression)
@@ -105,20 +108,6 @@ namespace Scorm
             var result = _command.ExecuteScalar();
             _connection.Close();
             return result != DBNull.Value ? (TResult)result : Activator.CreateInstance<TResult>();
-        }
-
-        public List<T> ToList()
-        {
-            _command.CommandText = SerializeSql();
-            IDbDataAdapter adapter = new SqlDataAdapter(_command);
-            var result = new DataSet();
-            adapter.Fill(result);
-            return result.Tables[0].Rows.Count > 0
-                ? (from DataRow d in result.Tables[0].Rows
-                   let obj = Activator.CreateInstance<T>()
-                   where (obj.Connection.ConnectionString = ConnectionString) != null
-                   select obj.Apply(d)).Cast<T>().ToList()
-                : new List<T>();
         }
 
         public void Dispose()
@@ -163,7 +152,7 @@ namespace Scorm
                 case ExpressionType.MemberAccess:
                     return ParseMemberExpression((MemberExpression)expression);
                 case ExpressionType.Constant:
-                    return string.Format("{0}", ParseConstantExpression(((ConstantExpression)expression).Value));
+                    return ParseConstantExpression(((ConstantExpression)expression).Value);
                 case ExpressionType.Equal:
                     return ParseCompareExpression((BinaryExpression)expression, "=");
                 case ExpressionType.NotEqual:

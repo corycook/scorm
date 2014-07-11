@@ -1,0 +1,5 @@
+/Users/corycook/scorm/scorm/obj/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.cs
+/Users/corycook/scorm/scorm/bin/Debug/Scorm.dll.mdb
+/Users/corycook/scorm/scorm/bin/Debug/Scorm.dll
+/Users/corycook/scorm/scorm/obj/Debug/Scorm.dll
+/Users/corycook/scorm/scorm/obj/Debug/Scorm.dll.mdb

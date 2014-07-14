@@ -17,15 +17,15 @@ The DataModel provides the interface to the data table stored in the SQL Server 
 
 Rules:
 
-1.       The name of the DataModel class must match the name of the data table on the database. If the data table name cannot transpose properly to a class name then you must use the Table Name Attribute (Scorm.TableNameAttribute).
+1. The name of the DataModel class must match the name of the data table on the database. If the data table name cannot transpose properly to a class name then you must use the Table Name Attribute (Scorm.TableNameAttribute).
 
-2.       The name of each property in the DataModel must match the name of the fields in the database that you wish to pull.
+2. The name of each property in the DataModel must match the name of the fields in the database that you wish to pull.
 
-3.       The key fields must be mapped and the Key Attribute (System.ComponentModel.DataAnnotations.KeyAttribute) must be applied to each key.
+3. The key fields must be mapped and the Key Attribute (System.ComponentModel.DataAnnotations.KeyAttribute) must be applied to each key.
 
-4.       The DataModel class must inherit the generic DataModel and pass itself as the generic type (example below)
+4. The DataModel class must inherit the generic DataModel and pass itself as the generic type (example below)
 
-5.       The DataModel must implement a default constructor that passes a connection string to the base constructor. The DataModel may implement additional constructors to pass other connection strings.
+5. The DataModel must implement a default constructor that passes a connection string to the base constructor. The DataModel may implement additional constructors to pass other connection strings.
 
  
 
@@ -33,31 +33,21 @@ Example:
 
 
 
-using System.ComponentModel.DataAnnotations;
-
-using Scorm;
-
+ using System.ComponentModel.DataAnnotations;
  
-
-[TableName("Customer Shipping Locations")]
-
-    public class Customer_Shipping_Location : DataModel<Customer_Shipping_Location>
-
-    {
-
-        [Key]
-
-        public int Id { get; set; }
-
-        public int Shipping_Locations_Id { get; set; }
-
-        public string Customer_Id { get; set; }
-
-        public Customer_Shipping_Location() : base(Utility.ConnectionString("ShippingInformationConnectionString")) { }
-
-    }
+ using Scorm;
  
-
+  
+ 
+ [TableName("Location")]
+ public class Location : DataModel<Location>
+ {
+     [Key]
+     public int Id { get; set; }
+     public int Shipping_Locations_Id { get; set; }
+     public string Customer_Id { get; set; }
+     public Customer_Shipping_Location() : base(Utility.ConnectionString("ShippingInformationConnectionString")) { }
+ }
  
 
 Since the table name has spaces we must use the TableNameAttribute to apply the proper table name. Id is the only unique key so we apply the KeyAttribute only to that property.
@@ -69,18 +59,14 @@ Functionality:
 
 
 Find
- 
+
 [static] Find queries the database based on key values
- 
 Customer_Shipping_Locations.Find(new { Id = 3 });
- 
 
 Find
- 
+
 [static] Overloaded Find queries objects with a single string key without creating an object.
- 
 Customer_Shipping_Locations.Find("3"); // type error
- 
 
 TryFind
  
@@ -148,48 +134,23 @@ It may be useful to represent a database as an objects with a collection of Data
 
 
 
-public class ShippingLocationInformation
-
-    {
-
-        public DataSet<Shipping_Locations> ShippingLocations { get; private set; }
-
-        public DataSet<Customer_Shipping_Location> CustomerShippingLocations { get; private set; }
-
- 
-
-        private const string ConnectionStringName = "ShippingInformationConnectionString";
-
-        public ShippingLocationInformation()
-
-        {
-
-            foreach (var i in GetType().GetProperties())
-
-            {
-
-                i.SetValue(this, Activator.CreateInstance(i.PropertyType, new object[] 
-
-              { Utility.ConnectionString(ConnectionStringName) }), null);
-
-            }
-
-        }
-
-    }
- 
-
- 
+ public class ShippingLocationInformation
+ {
+ public DataSet<Shipping_Locations> ShippingLocations { get; private set; }
+ public DataSet<Customer_Shipping_Location> CustomerShippingLocations { get; private set; }
+ private const string ConnectionStringName = "ShippingInformationConnectionString";
+ public ShippingLocationInformation()
+ {
+  foreach (var i in GetType().GetProperties())
+  {
+  i.SetValue(this, Activator.CreateInstance(i.PropertyType, new object[] 
+      { Utility.ConnectionString(ConnectionStringName) }), null); }
+  }
+ }
 
 This example uses reflection to set all of the DataSets to new instances using the same connection string.
 
- 
-
 You can then instantiate the database class and use the database properties to reference the DataSets.
-
- 
-
-
 
 var _db = new ShippingLocationInformation();
 var set = _db.CustomerShippingLocations;

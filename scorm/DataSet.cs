@@ -1,20 +1,21 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Data;
+using System.Collections.ObjectModel;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Scorm
 {
-    public class DataSet<T> : IDisposable, IEnumerable<T> where T : DataModel
+    public class DataSet<T> : IDisposable, IEnumerable<T>, ICloneable where T : DataModel
     {
         private readonly SqlConnection _connection = new SqlConnection();
         private readonly SqlCommand _command;
-        private IList<Expression> SelectExpressions { get; set; }
-        private IList<Expression> SearchExpressions { get; set; }
-        private IList<Expression> SortExpressions { get; set; }
-        private IList<Expression> SortDescendingExpressions { get; set; }
+        private ICollection<Expression> SelectExpressions { get; set; }
+        private ICollection<Expression> SearchExpressions { get; set; }
+        private ICollection<Expression> SortExpressions { get; set; }
+        private ICollection<Expression> SortDescendingExpressions { get; set; }
 
         private string ConnectionString
         {
@@ -25,6 +26,17 @@ namespace Scorm
             set
             {
                 _connection.ConnectionString = value;
+            }
+        }
+
+        private string SelectString
+        {
+            get
+            {
+                return string.Format("SELECT {0}",
+                    SelectExpressions.Any()
+                    ? string.Join(", ", SelectExpressions.Select(ParseSelectExpression))
+                    : string.Join(", ", typeof(T).GetProperties().Select(n => string.Format("[{0}]", n.Name))));
             }
         }
 
@@ -63,31 +75,44 @@ namespace Scorm
         {
             ConnectionString = connectionString;
             _command = _connection.CreateCommand();
-            SelectExpressions = new List<Expression>();
-            SearchExpressions = new List<Expression>();
-            SortExpressions = new List<Expression>();
-            SortDescendingExpressions = new List<Expression>();
+            SelectExpressions = new Collection<Expression>();
+            SearchExpressions = new Collection<Expression>();
+            SortExpressions = new Collection<Expression>();
+            SortDescendingExpressions = new Collection<Expression>();
+        }
+
+        public DataSet(DataSet<T> source)
+        {
+            ConnectionString = source.ConnectionString;
+            _command = _connection.CreateCommand();
+            SelectExpressions = new Collection<Expression>(source.SelectExpressions.ToList());
+            SearchExpressions = new Collection<Expression>(source.SearchExpressions.ToList());
+            SortExpressions = new Collection<Expression>(source.SortExpressions.ToList());
+            SortDescendingExpressions = new Collection<Expression>(source.SortDescendingExpressions.ToList());
         }
 
         public DataSet<T> Sort<TResult>(Expression<Func<T, TResult>> expression)
         {
-			var result = (DataSet<T>)MemberwiseClone ();
-			result.SortExpressions.Add (expression);
+            var result = new DataSet<T>(this);
+            if (result == null) throw new NullReferenceException();
+            result.SortExpressions.Add(expression);
             return result;
         }
 
         public DataSet<T> SortDescending<TResult>(Expression<Func<T, TResult>> expression)
         {
-			var result = (DataSet<T>)MemberwiseClone ();
-			result.SortDescendingExpressions.Add (expression);
-			return result;
+            var result = new DataSet<T>(this);
+            if (result == null) throw new NullReferenceException();
+            result.SortDescendingExpressions.Add(expression);
+            return result;
         }
 
         public DataSet<T> Where(Expression<Func<T, bool>> expression)
         {
-			var result = (DataSet<T>)MemberwiseClone ();
-			result.SearchExpressions.Add (expression);
-			return result;
+            var result = new DataSet<T>(this);
+            if (result == null) throw new NullReferenceException();
+            result.SearchExpressions.Add(expression);
+            return result;
         }
 
         public TResult Max<TResult>(Expression<Func<T, TResult>> expression)
@@ -110,39 +135,11 @@ namespace Scorm
             return result != DBNull.Value ? (TResult)result : Activator.CreateInstance<TResult>();
         }
 
-        public void Dispose()
-        {
-            _connection.Dispose();
-            _command.Dispose();
-        }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            _command.CommandText = SerializeSql();
-            return new DataSetEnumerator(_command);
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            _command.CommandText = SerializeSql();
-            return new DataSetEnumerator(_command);
-        }
-
         private string SerializeSql()
         {
             return string.Format("{0} FROM [{1}] {2} {3}", SelectString, TableName, SearchString, SortString).Trim();
         }
 
-        private string SelectString
-        {
-            get
-            {
-                return string.Format("SELECT {0}",
-                    SelectExpressions.Any()
-                    ? string.Join(", ", SelectExpressions.Select(ParseSelectExpression))
-                    : string.Join(", ", typeof(T).GetProperties().Select(n => string.Format("[{0}]", n.Name))));
-            }
-        }
         private static string ParseSearchExpression(Expression expression)
         {
             switch (expression.NodeType)
@@ -235,6 +232,29 @@ namespace Scorm
             }
         }
 
+        public void Dispose()
+        {
+            _connection.Dispose();
+            _command.Dispose();
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            _command.CommandText = SerializeSql();
+            return new DataSetEnumerator(_command);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            _command.CommandText = SerializeSql();
+            return new DataSetEnumerator(_command);
+        }
+
+        public object Clone()
+        {
+            return new DataSet<T>(this);
+        }
+
         private class DataSetEnumerator : IEnumerator<T>
         {
             private readonly SqlCommand _command;
@@ -258,7 +278,7 @@ namespace Scorm
                 _reader.Dispose();
             }
 
-            object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get { return Current; }
             }
@@ -273,14 +293,14 @@ namespace Scorm
                 _reader = _command.ExecuteReader();
             }
         }
+
+        [Flags]
+        private enum StringMethod
+        {
+            Contains,
+            StartsWith,
+            EndsWith
+        }
     }
 
-
-    [Flags]
-    public enum StringMethod
-    {
-        Contains,
-        StartsWith,
-        EndsWith
-    }
 }

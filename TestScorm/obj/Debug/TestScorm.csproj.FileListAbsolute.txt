@@ -1,0 +1,7 @@
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\bin\Debug\TestScorm.dll
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\bin\Debug\TestScorm.pdb
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\bin\Debug\Scorm.dll
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\bin\Debug\Scorm.pdb
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\obj\Debug\TestScorm.csprojResolveAssemblyReference.cache
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\obj\Debug\TestScorm.dll
+C:\Users\ccook\documents\visual studio 2013\Projects\scorm\TestScorm\obj\Debug\TestScorm.pdb

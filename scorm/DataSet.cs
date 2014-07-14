@@ -14,8 +14,8 @@ namespace Scorm
         private readonly SqlCommand _command;
         private ICollection<Expression> SelectExpressions { get; set; }
         private ICollection<Expression> SearchExpressions { get; set; }
-        private ICollection<Expression> SortExpressions { get; set; }
-        private ICollection<Expression> SortDescendingExpressions { get; set; }
+        private ICollection<Expression> OrderByExpressions { get; set; }
+        private ICollection<Expression> OrderByDescendingExpressions { get; set; }
 
         private string ConnectionString
         {
@@ -50,14 +50,14 @@ namespace Scorm
             }
         }
 
-        private string SortString
+        private string OrderByString
         {
             get
             {
-                return SortExpressions.Any() || SortDescendingExpressions.Any()
+                return OrderByExpressions.Any() || OrderByDescendingExpressions.Any()
                     ? string.Format("ORDER BY {0}", string.Join(", ",
-                        SortExpressions.Select(ParseSortExpression)
-                            .Concat(SortDescendingExpressions.Select(n => ParseSortExpression(n) + " DESC"))))
+                        OrderByExpressions.Select(ParseOrderByExpression)
+                            .Concat(OrderByDescendingExpressions.Select(n => ParseOrderByExpression(n) + " DESC"))))
                     : string.Empty;
             }
         }
@@ -71,14 +71,26 @@ namespace Scorm
             }
         }
 
+        public int Count
+        {
+            get
+            {
+                _connection.Open();
+                _command.CommandText = string.Format("SELECT COUNT(*) count FROM [{0}] {1}", TableName, SearchString);
+                var result = _command.ExecuteScalar();
+                _connection.Close();
+                return result != DBNull.Value ? (int)result : 0;
+            }
+        }
+
         public DataSet(string connectionString)
         {
             ConnectionString = connectionString;
             _command = _connection.CreateCommand();
             SelectExpressions = new Collection<Expression>();
             SearchExpressions = new Collection<Expression>();
-            SortExpressions = new Collection<Expression>();
-            SortDescendingExpressions = new Collection<Expression>();
+            OrderByExpressions = new Collection<Expression>();
+            OrderByDescendingExpressions = new Collection<Expression>();
         }
 
         public DataSet(DataSet<T> source)
@@ -87,23 +99,23 @@ namespace Scorm
             _command = _connection.CreateCommand();
             SelectExpressions = new Collection<Expression>(source.SelectExpressions.ToList());
             SearchExpressions = new Collection<Expression>(source.SearchExpressions.ToList());
-            SortExpressions = new Collection<Expression>(source.SortExpressions.ToList());
-            SortDescendingExpressions = new Collection<Expression>(source.SortDescendingExpressions.ToList());
+            OrderByExpressions = new Collection<Expression>(source.OrderByExpressions.ToList());
+            OrderByDescendingExpressions = new Collection<Expression>(source.OrderByDescendingExpressions.ToList());
         }
 
-        public DataSet<T> Sort<TResult>(Expression<Func<T, TResult>> expression)
+        public DataSet<T> OrderBy<TResult>(Expression<Func<T, TResult>> expression)
         {
             var result = new DataSet<T>(this);
             if (result == null) throw new NullReferenceException();
-            result.SortExpressions.Add(expression);
+            result.OrderByExpressions.Add(expression);
             return result;
         }
 
-        public DataSet<T> SortDescending<TResult>(Expression<Func<T, TResult>> expression)
+        public DataSet<T> OrderByDescending<TResult>(Expression<Func<T, TResult>> expression)
         {
             var result = new DataSet<T>(this);
             if (result == null) throw new NullReferenceException();
-            result.SortDescendingExpressions.Add(expression);
+            result.OrderByDescendingExpressions.Add(expression);
             return result;
         }
 
@@ -137,7 +149,7 @@ namespace Scorm
 
         private string SerializeSql()
         {
-            return string.Format("{0} FROM [{1}] {2} {3}", SelectString, TableName, SearchString, SortString).Trim();
+            return string.Format("{0} FROM [{1}] {2} {3}", SelectString, TableName, SearchString, OrderByString).Trim();
         }
 
         private static string ParseSearchExpression(Expression expression)
@@ -195,12 +207,12 @@ namespace Scorm
             return ParseConstantExpression(value);
         }
 
-        private static string ParseSortExpression(Expression expression)
+        private static string ParseOrderByExpression(Expression expression)
         {
             switch (expression.NodeType)
             {
                 case ExpressionType.Lambda:
-                    return ParseSortExpression(((LambdaExpression)expression).Body);
+                    return ParseOrderByExpression(((LambdaExpression)expression).Body);
                 case ExpressionType.MemberAccess:
                     return ParseMemberExpression((MemberExpression)expression);
                 default:
